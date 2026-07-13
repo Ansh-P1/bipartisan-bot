@@ -1,0 +1,9 @@
+langgraph>=0.2
+langchain-core
+langchain-anthropic
+langchain-openai
+tavily-python
+ddgs
+streamlit
+python-dotenv
+pytest
