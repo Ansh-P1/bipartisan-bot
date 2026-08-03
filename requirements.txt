@@ -2,6 +2,7 @@ langgraph>=0.2
 langchain-core
 langchain-anthropic
 langchain-openai
+langchain-groq
 tavily-python
 ddgs
 streamlit

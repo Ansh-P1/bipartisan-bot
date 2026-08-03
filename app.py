@@ -1,9 +1,45 @@
+import os
+
 import streamlit as st
 from dotenv import load_dotenv
 
 from agents.graph import build_graph
 
 load_dotenv()
+
+
+def _check_password() -> bool:
+    """Gate the app behind a shared password set via APP_PASSWORD.
+
+    If APP_PASSWORD isn't configured (e.g. local dev), the gate is skipped
+    so it never blocks running the app without setting up secrets first.
+    """
+    correct = os.environ.get("APP_PASSWORD", "")
+    if not correct:
+        return True
+    if st.session_state.get("authenticated"):
+        return True
+
+    def _on_submit():
+        st.session_state["authenticated"] = st.session_state.get("password_input") == correct
+
+    st.markdown("<h1>The Bipartisan Gazette</h1>", unsafe_allow_html=True)
+    st.text_input("Password", type="password", on_change=_on_submit, key="password_input")
+    if st.session_state.get("authenticated") is False:
+        st.error("Incorrect password.")
+    return False
+
+
+def _teaser(text: str, max_chars: int = 180) -> str:
+    """First sentence of a statement, for a bold one-line summary above the expander."""
+    if not text:
+        return ""
+    first_sentence = text.strip().split(". ")[0].strip()
+    if not first_sentence.endswith((".", "!", "?")):
+        first_sentence += "."
+    if len(first_sentence) > max_chars:
+        first_sentence = first_sentence[:max_chars].rsplit(" ", 1)[0] + "…"
+    return first_sentence
 
 st.set_page_config(page_title="Bipartisan Bot", page_icon="\U0001F4F0", layout="wide")
 
@@ -76,6 +112,9 @@ h1, h2, h3, .gazette-headline {
 """
 st.markdown(GAZETTE_CSS, unsafe_allow_html=True)
 
+if not _check_password():
+    st.stop()
+
 EXAMPLE_TOPICS = [
     "India's Uniform Civil Code debate",
     "Agnipath military recruitment scheme",
@@ -141,23 +180,35 @@ if "debate_state" in st.session_state:
     with col_r:
         st.markdown("<div class='side-right'>", unsafe_allow_html=True)
         st.markdown("**Right**")
-        st.write(state.get("right_opening", ""))
+        right_opening = state.get("right_opening", "")
+        st.markdown(f"**{_teaser(right_opening)}**")
+        with st.expander("Full opening statement"):
+            st.write(right_opening)
         st.markdown("</div>", unsafe_allow_html=True)
     with col_l:
         st.markdown("<div class='side-left'>", unsafe_allow_html=True)
         st.markdown("**Left**")
-        st.write(state.get("left_opening", ""))
+        left_opening = state.get("left_opening", "")
+        st.markdown(f"**{_teaser(left_opening)}**")
+        with st.expander("Full opening statement"):
+            st.write(left_opening)
         st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("<p class='gazette-section-number'>II. Rebuttals</p>", unsafe_allow_html=True)
     col_r2, col_l2 = st.columns(2)
     with col_r2:
         st.markdown("<div class='side-right'>", unsafe_allow_html=True)
-        st.write(state.get("right_rebuttal", ""))
+        right_rebuttal = state.get("right_rebuttal", "")
+        st.markdown(f"**{_teaser(right_rebuttal)}**")
+        with st.expander("Full rebuttal"):
+            st.write(right_rebuttal)
         st.markdown("</div>", unsafe_allow_html=True)
     with col_l2:
         st.markdown("<div class='side-left'>", unsafe_allow_html=True)
-        st.write(state.get("left_rebuttal", ""))
+        left_rebuttal = state.get("left_rebuttal", "")
+        st.markdown(f"**{_teaser(left_rebuttal)}**")
+        with st.expander("Full rebuttal"):
+            st.write(left_rebuttal)
         st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("</div>", unsafe_allow_html=True)
@@ -170,15 +221,15 @@ if "debate_state" in st.session_state:
     with col_for:
         st.markdown("**Case For**")
         for item in summary.get("case_for", []):
-            st.markdown(f"- {item['point']} _( {item['raised_by']} )_")
+            st.markdown(f"- **{item['point']}** _( {item['raised_by']} )_")
     with col_against:
         st.markdown("**Case Against**")
         for item in summary.get("case_against", []):
-            st.markdown(f"- {item['point']} _( {item['raised_by']} )_")
+            st.markdown(f"- **{item['point']}** _( {item['raised_by']} )_")
     with col_common:
         st.markdown("**Common Ground**")
         for point in summary.get("common_ground", []):
-            st.markdown(f"- {point}")
+            st.markdown(f"- **{point}**")
 
     if summary.get("key_facts"):
         st.markdown("**Key Facts**")

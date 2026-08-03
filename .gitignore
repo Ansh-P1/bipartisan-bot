@@ -13,8 +13,8 @@ __pycache__/
 # Eval output
 eval_report.json
 
-# Streamlit
-.streamlit/
+# Streamlit (keep config.toml for the theme; secrets never get committed)
+.streamlit/secrets.toml
 
 # OS / editor
 .DS_Store
