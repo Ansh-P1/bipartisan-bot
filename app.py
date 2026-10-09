@@ -1,7 +1,6 @@
 import streamlit as st
 from dotenv import load_dotenv
 
-from agents.graph import build_graph
 
 load_dotenv()
 
@@ -109,10 +108,9 @@ topic = topic_input.strip() or (preset if preset != "(none)" else "")
 convene = st.button("Convene the Debate", type="primary", disabled=not topic)
 
 if convene:
-    status = st.status("Researchingâ€¦", expanded=True)
+    status = st.status("Researching…", expanded=True)
 
-    graph = build_graph()
-    state = {"topic": topic, "news_context": []}
+    from concurrent.futures import ThreadPoolExecutor
 
     from agents.graph import (
         guardrail_node,
@@ -124,17 +122,22 @@ if convene:
         right_rebuttal_node,
     )
 
+    def _run_parallel(fn_a, fn_b, snapshot):
+        # The two sides are independent at each stage, so run them concurrently
+        # (same fan-out the LangGraph graph does).
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            fut_a, fut_b = pool.submit(fn_a, snapshot), pool.submit(fn_b, snapshot)
+            return {**fut_a.result(), **fut_b.result()}
+
+    state = {"topic": topic, "news_context": []}
     state.update(research_node(state))
-    status.update(label="Right agent draftingâ€¦")
-    state.update(right_opening_node(state))
-    status.update(label="Left agent draftingâ€¦")
-    state.update(left_opening_node(state))
-    status.update(label="Rebuttalsâ€¦")
-    state.update(right_rebuttal_node(state))
-    state.update(left_rebuttal_node(state))
-    status.update(label="Moderator synthesizingâ€¦")
+    status.update(label="Both agents drafting openings…")
+    state.update(_run_parallel(right_opening_node, left_opening_node, state))
+    status.update(label="Rebuttals…")
+    state.update(_run_parallel(right_rebuttal_node, left_rebuttal_node, state))
+    status.update(label="Moderator synthesizing…")
     state.update(moderator_node(state))
-    status.update(label="Safety checkâ€¦")
+    status.update(label="Safety check…")
     state.update(guardrail_node(state))
     status.update(label="Done", state="complete")
 

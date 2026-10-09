@@ -2,7 +2,7 @@ import json
 from typing import Dict, List
 
 from langgraph.graph import END, StateGraph
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from agents.llm import get_llm
 from agents.prompts import (
@@ -30,6 +30,13 @@ class CasePoint(BaseModel):
     raised_by: str = Field(description="Right|Left|Both")
     source_url: str = ""
 
+    @field_validator("source_url", mode="before")
+    @classmethod
+    def _single_url(cls, v):
+        if isinstance(v, list):
+            return v[0] if v else ""
+        return v or ""
+
 
 class SourceEntry(BaseModel):
     title: str
@@ -39,11 +46,11 @@ class SourceEntry(BaseModel):
 
 class ModeratorOutput(BaseModel):
     topic_summary: str
-    case_for: List[CasePoint]
-    case_against: List[CasePoint]
-    common_ground: List[str]
-    key_facts: List[str]
-    sources: List[SourceEntry]
+    case_for: List[CasePoint] = Field(default_factory=list)
+    case_against: List[CasePoint] = Field(default_factory=list)
+    common_ground: List[str] = Field(default_factory=list)
+    key_facts: List[str] = Field(default_factory=list)
+    sources: List[SourceEntry] = Field(default_factory=list)
 
 
 class GuardrailOutput(BaseModel):
@@ -97,7 +104,7 @@ def left_rebuttal_node(state: DebateState) -> Dict:
 
 
 def moderator_node(state: DebateState) -> Dict:
-    llm = get_llm("moderator").with_structured_output(ModeratorOutput)
+    llm = get_llm("moderator").with_structured_output(ModeratorOutput, method="json_schema")
     prompt = MODERATOR_PROMPT.format(
         topic=state["topic"],
         right_opening=state["right_opening"],
@@ -111,7 +118,7 @@ def moderator_node(state: DebateState) -> Dict:
 
 
 def guardrail_node(state: DebateState) -> Dict:
-    llm = get_llm("guardrail").with_structured_output(GuardrailOutput)
+    llm = get_llm("guardrail").with_structured_output(GuardrailOutput, method="json_schema")
     right_text = f"{state['right_opening']}\n\n{state['right_rebuttal']}"
     left_text = f"{state['left_opening']}\n\n{state['left_rebuttal']}"
     prompt = GUARDRAIL_PROMPT.format(right_text=right_text, left_text=left_text)
