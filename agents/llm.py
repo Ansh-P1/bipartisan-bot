@@ -22,7 +22,7 @@ def get_llm(role: str = "default"):
     if os.environ.get("GROQ_API_KEY"):
         from langchain_groq import ChatGroq
 
-        return ChatGroq(model="llama-3.3-70b-versatile")
+        return ChatGroq(model="openai/gpt-oss-120b")
 
     raise RuntimeError(
         "No LLM API key found. Set ANTHROPIC_API_KEY, OPENAI_API_KEY, or GROQ_API_KEY."
