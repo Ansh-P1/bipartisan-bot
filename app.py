@@ -108,7 +108,7 @@ topic = topic_input.strip() or (preset if preset != "(none)" else "")
 convene = st.button("Convene the Debate", type="primary", disabled=not topic)
 
 if convene:
-    status = st.status("Researching…", expanded=True)
+    status = st.status("Researchingâ€¦", expanded=True)
 
     from concurrent.futures import ThreadPoolExecutor
 
@@ -131,13 +131,13 @@ if convene:
 
     state = {"topic": topic, "news_context": []}
     state.update(research_node(state))
-    status.update(label="Both agents drafting openings…")
+    status.update(label="Both agents drafting openingsâ€¦")
     state.update(_run_parallel(right_opening_node, left_opening_node, state))
-    status.update(label="Rebuttals…")
+    status.update(label="Rebuttalsâ€¦")
     state.update(_run_parallel(right_rebuttal_node, left_rebuttal_node, state))
-    status.update(label="Moderator synthesizing…")
+    status.update(label="Moderator synthesizingâ€¦")
     state.update(moderator_node(state))
-    status.update(label="Safety check…")
+    status.update(label="Safety checkâ€¦")
     state.update(guardrail_node(state))
     status.update(label="Done", state="complete")
 
