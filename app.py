@@ -1,33 +1,9 @@
-import os
-
 import streamlit as st
 from dotenv import load_dotenv
 
 from agents.graph import build_graph
 
 load_dotenv()
-
-
-def _check_password() -> bool:
-    """Gate the app behind a shared password set via APP_PASSWORD.
-
-    If APP_PASSWORD isn't configured (e.g. local dev), the gate is skipped
-    so it never blocks running the app without setting up secrets first.
-    """
-    correct = os.environ.get("APP_PASSWORD", "")
-    if not correct:
-        return True
-    if st.session_state.get("authenticated"):
-        return True
-
-    def _on_submit():
-        st.session_state["authenticated"] = st.session_state.get("password_input") == correct
-
-    st.markdown("<h1>The Bipartisan Gazette</h1>", unsafe_allow_html=True)
-    st.text_input("Password", type="password", on_change=_on_submit, key="password_input")
-    if st.session_state.get("authenticated") is False:
-        st.error("Incorrect password.")
-    return False
 
 
 def _teaser(text: str, max_chars: int = 180) -> str:
@@ -111,9 +87,6 @@ h1, h2, h3, .gazette-headline {
 </style>
 """
 st.markdown(GAZETTE_CSS, unsafe_allow_html=True)
-
-if not _check_password():
-    st.stop()
 
 EXAMPLE_TOPICS = [
     "India's Uniform Civil Code debate",
